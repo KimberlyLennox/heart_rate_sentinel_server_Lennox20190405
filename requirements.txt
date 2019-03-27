@@ -1,0 +1,9 @@
+pytest
+pytest-pep8
+pytest-cov
+numpy
+jupyter
+ipython
+scipy
+fuzzywuzzy
+python-Levenshtein
