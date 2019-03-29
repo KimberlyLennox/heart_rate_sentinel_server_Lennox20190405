@@ -40,5 +40,18 @@ def newpatient():
 @app.route("/api/heart_rate/<patient_id>", methods=["GET"])
 def getage(patient_id):
     user = User.objects.raw({"_id": patient_id}).first()
-    HR = user.user_age
+    HR = user.heart_rate
     return jsonify(HR)
+
+
+@app.route("/api/heart_rate", methods=["POST"])
+def sendHR():
+    r = request.get_json()
+    patient_id = str(r["patient_id"])
+    HR = r["heart_rate"]
+    T = datetime.datetime.now()
+    user = User.objects.raw({"_id": patient_id}).first()
+    user.heart_rate = HR
+    user.timestamp = T
+    user.save()
+    return jsonify(T)
