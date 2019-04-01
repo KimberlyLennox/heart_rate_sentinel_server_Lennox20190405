@@ -54,6 +54,26 @@ def getHR(patient_id):
     return jsonify(HR)
 
 
+@app.route("/api/heart_rate/status/<patient_id>", methods=["GET"])
+def Status(patient_id):
+    """
+    Returns most recent HR data for the patient with the given ID
+    Args: Patient ID
+    returns: latest heart rate, heart rate status (tachycardic or not),
+    timestamp of most recent HR data point.
+    """
+    user = User.objects.raw({"_id": patient_id}).first()
+    HR = user.heart_rate[-1:]
+    tach = "Unknown"
+    T = user.timestamp[-1:]
+    info = {
+            "heart_rate": HR,
+            "status": tach,
+            "timestamp": T
+            }
+    return jsonify(info)
+
+
 @app.route("/api/heart_rate", methods=["POST"])
 def sendHR():
     r = request.get_json()
