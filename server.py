@@ -13,8 +13,8 @@ class User(MongoModel):
     email = fields.EmailField()
     user_age = fields.IntegerField()
     status = fields.CharField()
-    timestamp = fields.DateTimeField()
-    heart_rate = fields.FloatField()
+    timestamp = fields.ListField()
+    heart_rate = fields.ListField()
 
 
 @app.route("/", methods=["GET"])
@@ -28,6 +28,10 @@ def hello():
 
 @app.route("/api/new_patient", methods=["POST"])
 def newpatient():
+    """
+    Allows user to input patient id, email, and age in
+    JSON format
+    """
     r = request.get_json()
     ID = r["patient_id"]
     a_email = r["attending_email"]
@@ -38,7 +42,34 @@ def newpatient():
 
 
 @app.route("/api/heart_rate/<patient_id>", methods=["GET"])
-def getage(patient_id):
+def getHR(patient_id):
+    """
+    This function returns all heart rate data stored within the
+    database
+    Args: Patient ID
+    Returns: All heart rate data ever collected from this patient
+    """
     user = User.objects.raw({"_id": patient_id}).first()
-    HR = user.user_age
+    HR = user.heart_rate
     return jsonify(HR)
+
+
+@app.route("/api/heart_rate", methods=["POST"])
+def sendHR():
+    r = request.get_json()
+    patient_id = str(r["patient_id"])
+    HR_ind = r["heart_rate"]
+    T_ind = datetime.datetime.now()
+    user = User.objects.raw({"_id": patient_id}).first()
+    if user.heart_rate is None:
+        HR = HR_ind
+        T = T_ind
+    else:
+        HR = user.heart_rate
+        T = user.timestamp
+        HR.append(HR_ind)
+        T.append(T_ind)
+    user.heart_rate = HR
+    user.timestamp = T
+    user.save()
+    return jsonify(T_ind)
