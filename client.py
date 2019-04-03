@@ -45,3 +45,6 @@ print(r2.json())
 
 r4 = requests.get("http://127.0.0.1:5000/api/heart_rate/status/1")
 print(r4.json())
+
+r5 = requests.get("http://127.0.0.1:5000/api/heart_rate/average/1")
+print(r5.json())

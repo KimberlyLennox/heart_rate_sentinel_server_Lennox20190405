@@ -5,7 +5,6 @@ import numpy as np
 import datetime
 
 app = Flask(__name__)
-app.run(debug=True)
 connect("mongodb://localhost:27017/SentinelServer")
 
 
@@ -16,6 +15,32 @@ class User(MongoModel):
     status = fields.CharField()
     timestamp = fields.ListField()
     heart_rate = fields.ListField()
+
+
+def HRStatus(HR):
+    """
+    Determines whether patient is tachycardic
+    Args: HR, patient herat rate
+    Returns: outstring: whether or not patient is tachycardic
+    """
+    if HR == []:
+        outstring = "None"
+    else:
+        HR = HR[0]
+        if HR > 90:
+            outstring = "tachycardic"
+        else:
+            outstring = "not tachycardic"
+    return outstring
+
+
+def CalcAverage(HR):
+    if HR == []:
+        avg = 0
+    else:
+        vec = np.array(HR)
+        avg = np.mean(HR)
+    return avg
 
 
 @app.route("/", methods=["GET"])
@@ -105,18 +130,11 @@ def sendHR():
     return jsonify(T_ind)
 
 
-def HRStatus(HR):
-    """
-    Determines whether patient is tachycardic
-    Args: HR, patient herat rate
-    Returns: outstring: whether or not patient is tachycardic
-    """
-    if HR == []:
-        outstring = "None"
-    else:
-        HR = HR[0]
-        if HR > 90:
-            outstring = "tachycardic"
-        else:
-            outstring = "not tachycardic"
-    return outstring
+@app.route("/api/heart_rate/average/<patient_id>", methods=["GET"])
+def GetAverage(patient_id):
+    patient_id = str(patient_id)
+    user = User.objects.raw({"_id": patient_id}).first()
+    avg = CalcAverage(user.heart_rate)
+    out = {"Patient ID": patient_id,
+           "HR Average": avg}
+    return jsonify(out)
