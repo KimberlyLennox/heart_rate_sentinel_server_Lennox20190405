@@ -5,6 +5,7 @@ import numpy as np
 import datetime
 
 app = Flask(__name__)
+app.run(debug=True)
 connect("mongodb://localhost:27017/SentinelServer")
 
 
@@ -38,7 +39,8 @@ def newpatient():
     age = r["user_age"]
     u = User(ID, email=a_email, user_age=age)
     u.save()
-    return jsonify(a_email)
+    info = "Patient saved successfully"
+    return jsonify(info)
 
 
 @app.route("/api/heart_rate/<patient_id>", methods=["GET"])
@@ -64,7 +66,7 @@ def Status(patient_id):
     """
     user = User.objects.raw({"_id": patient_id}).first()
     HR = user.heart_rate[-1:]
-    tach = "Unknown"
+    tach = HRStatus(HR)
     T = user.timestamp[-1:]
     info = {
             "heart_rate": HR,
@@ -76,16 +78,24 @@ def Status(patient_id):
 
 @app.route("/api/heart_rate", methods=["POST"])
 def sendHR():
+    """
+    Posts new heart rate data
+    Args:
+    Patient ID
+    Heart Rate
+    Returns:
+    Timestamp of request
+    """
     r = request.get_json()
     patient_id = str(r["patient_id"])
     HR_ind = r["heart_rate"]
     T_ind = datetime.datetime.now()
     user = User.objects.raw({"_id": patient_id}).first()
+    HR = user.heart_rate
     if user.heart_rate is None:
         HR = HR_ind
         T = T_ind
     else:
-        HR = user.heart_rate
         T = user.timestamp
         HR.append(HR_ind)
         T.append(T_ind)
@@ -93,3 +103,20 @@ def sendHR():
     user.timestamp = T
     user.save()
     return jsonify(T_ind)
+
+
+def HRStatus(HR):
+    """
+    Determines whether patient is tachycardic
+    Args: HR, patient herat rate
+    Returns: outstring: whether or not patient is tachycardic
+    """
+    if HR == []:
+        outstring = "None"
+    else:
+        HR = HR[0]
+        if HR > 90:
+            outstring = "tachycardic"
+        else:
+            outstring = "not tachycardic"
+    return outstring
