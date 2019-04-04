@@ -1,12 +1,6 @@
-pytest
-pytest-pep8
-pytest-cov
 numpy
+flask
+requests
 jupyter
 ipython
 scipy
-fuzzywuzzy
-python-Levenshtein
-flask
-requests
-pymodm
