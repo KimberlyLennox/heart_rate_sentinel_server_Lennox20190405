@@ -3,6 +3,7 @@ flask
 pytest
 pytest-cov
 pytest-pep8
+pymodm
 requests
 jupyter
 ipython
