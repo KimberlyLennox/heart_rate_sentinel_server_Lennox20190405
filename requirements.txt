@@ -1,5 +1,8 @@
 numpy
 flask
+pytest
+pytest-cov
+pytest-pep8
 requests
 jupyter
 ipython
