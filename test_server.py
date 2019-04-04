@@ -4,7 +4,7 @@ import pytest
 @pytest.mark.parametrize("s, soln", [([100], "tachycardic"),
                                      ([80], "not tachycardic"),
                                      ([], "No heart rate data"
-                                     "has been entered")])
+                                     " has been entered")])
 def test_HRStatus(s, soln):
     from server import HRStatus
     ans = HRStatus(s)
