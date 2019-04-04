@@ -36,7 +36,7 @@ TJ = TJ.replace('"', '')
 T = datetime.datetime.strptime(TJ, "%a, %d %b %Y %H:%M:%S %Z")
 HR = {
      "patient_id": "1",
-     "heart_rate": 100
+     "heart_rate": 60
      }
 
 
