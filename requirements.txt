@@ -4,6 +4,7 @@ pytest
 pytest-cov
 pytest-pep8
 pymodm
+sendgrid
 requests
 jupyter
 ipython

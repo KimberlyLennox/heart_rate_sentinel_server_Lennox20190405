@@ -1,3 +1,8 @@
+# using SendGrid's Python Library
+# https://github.com/sendgrid/sendgrid-python
+import os
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 from flask import Flask, jsonify, request
 from pymodm import connect
 from pymodm import MongoModel, fields
@@ -10,6 +15,12 @@ connect("mongodb://localhost:27017/SentinelServer")
 
 
 class User(MongoModel):
+    """
+    MongoDB user class that stores heart rate,
+    timestamp of all heart rate data, user age
+    patient ID number (Primary key), and
+    attending physician email address.
+    """
     patientID = fields.CharField(primary_key=True)
     email = fields.EmailField()
     user_age = fields.IntegerField()
@@ -25,7 +36,7 @@ def HRStatus(HR):
     Returns: outstring: whether or not patient is tachycardic
     """
     if HR == []:
-        outstring = "None"
+        outstring = "No heart rate data has been entered"
     else:
         HR = HR[0]
         if HR > 90:
@@ -42,7 +53,7 @@ def CalcAverage(HR):
     Returns: avg, average value
     """
     if HR == []:
-        avg = 0
+        avg = "No heart rate data has been entered"
     else:
         vec = np.array(HR)
         avg = np.mean(HR)
@@ -67,6 +78,14 @@ def GetIndex(T, time):
 
 
 def CheckFormat(r):
+    """
+    Makes sure that input data for a new patient has the correct entries
+    in the correct data types
+    Args:
+        r: dictionary created from user input
+    Returns:
+        x: string assessing format correctness
+    """
     try:
         t = str(r["patient_id"])
         a = str(r["attending_email"])
@@ -83,6 +102,13 @@ def CheckFormat(r):
 
 
 def CheckHRData(r):
+    """
+    Makes sure that heart rate data has been input successfully
+    Args:
+        r: dictionary created from user input
+    Returns:
+        x: string/int assessing format correctness
+    """
     x = 0
     try:
         t = str(r["patient_id"])
@@ -101,6 +127,14 @@ def CheckHRData(r):
 
 
 def CheckIntervalData(r):
+    """
+    Makes sure that heart rate data and timestamp has been
+    input successfully
+    Args:
+        r: dictionary created from user input
+    Returns:
+        x: string/int assessing format correctness
+    """
     x = 0
     try:
         ID = str(r["patient_id"])
@@ -154,7 +188,7 @@ def getHR(patient_id):
     """
     user = User.objects.raw({"_id": patient_id}).first()
     HR = user.heart_rate
-    return jsonify(HR)
+    return(jsonify(HR))
 
 
 @app.route("/api/heart_rate/status/<patient_id>", methods=["GET"])
@@ -205,6 +239,9 @@ def sendHR():
             T = user.timestamp
             HR.append(HR_ind)
             T.append(T_ind)
+        tach = HRStatus([HR_ind])
+        if tach == "tachycardic":
+            SendStatus(user)
         user.heart_rate = HR
         user.timestamp = T
         user.save()
@@ -213,6 +250,14 @@ def sendHR():
 
 @app.route("/api/heart_rate/average/<patient_id>", methods=["GET"])
 def GetAverage(patient_id):
+    """
+    Returns average of all previous heart rate measurements
+    Args:
+        patient_id: patient identification number
+    returns:
+        Patient ID
+        avg: HR average
+    """
     patient_id = str(patient_id)
     user = User.objects.raw({"_id": patient_id}).first()
     avg = CalcAverage(user.heart_rate)
@@ -223,6 +268,15 @@ def GetAverage(patient_id):
 
 @app.route("/api/heart_rate/interval_average", methods=["GET"])
 def IntervalAverage():
+    """
+    Returns average heart rate over given time interval
+    Args:
+        r: json input with entries
+        patient ID
+        heart_rate_average_since: timestamp for start of measurements
+    Returns:
+        out: Heart rate average over given time interval
+    """
     r = request.get_json()
     x = CheckIntervalData(r)
     if x == "Incorrect format: please try again":
@@ -244,3 +298,26 @@ def IntervalAverage():
                 HR = HRmat[idx:len(HRmat)]
                 out = CalcAverage(HR)
     return jsonify(out)
+
+
+def SendStatus(user):
+    """
+    Sends email to attending physician if patient is tachycardic
+    Args: user: MongoDB user object
+    """
+    outstring = "Patient <b>"+str(user.patientID)
+    +"</b> is tachycardic with a heart rate of "+str(user.heart_rate[-1])
+    message = Mail(
+        from_email='kimberly.lennox@duke.edu',
+        to_emails=user.email,
+        subject='Patient '+str(user.patientID)+" Status",
+        html_content=outstring)
+    try:
+        sg = SendGridAPIClient(os.environ.get('SG.QzTqaJPXQD-oOsoTc8gm-w.s-" \
+        ZTohWVJPdDbQpO6ErXPLkAw-v4kquByyKbTatqWVc'))
+        response = sg.send(message)
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
+    except Exception as e:
+        print(e.message)
