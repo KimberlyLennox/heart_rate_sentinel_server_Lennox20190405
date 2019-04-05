@@ -313,8 +313,7 @@ def SendStatus(user):
         subject='Patient '+str(user.patientID)+" Status",
         html_content=outstring)
     try:
-        sg = SendGridAPIClient(os.environ.get('SG.QzTqaJPXQD-oOsoTc8gm-w.s-" \
-        ZTohWVJPdDbQpO6ErXPLkAw-v4kquByyKbTatqWVc'))
+        sg = SendGridAPIClient(os.environ.get('APIKey'))
         response = sg.send(message)
         print(response.status_code)
         print(response.body)
