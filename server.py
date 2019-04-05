@@ -9,7 +9,7 @@ import numpy as np
 import datetime
 import math
 app = Flask(__name__)
-connect("mongodb+srv://Kim:Zs14nsnRcSzRJcOF@"
+connect("mongodb+srv://Kim:Password"
         "cluster0-cxyhs.mongodb.net/test?retryWrites=true")
 for handler in logging.root.handlers[:]:  # This line makes the log file work
     logging.root.removeHandler(handler)
@@ -348,10 +348,7 @@ def SendStatus(user):
         subject='Patient '+str(user.patientID)+" Status",
         html_content=outstring)
     try:
-        sg = SendGridAPIClient(os.environ.get('SG.QzTqaJPXQD-'
-                                              'oOsoTc8gm-w.s-ZToh'
-                                              'WVJPdDbQpO6ErX'
-                                              'PLkAw-v4kquByyKbTatqWVc'))
+        sg = SendGridAPIClient(os.environ.get('API Key'))
         response = sg.send(message)
         print(response.status_code)
         print(response.body)
