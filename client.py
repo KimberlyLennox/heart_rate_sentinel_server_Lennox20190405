@@ -54,9 +54,11 @@ print(r4.json())
 
 r5 = requests.get("http://127.0.0.1:5000/api/heart_rate/average/1")
 print(r5.json())
+time.sleep(5)
+T_fut = datetime.datetime.now()
 HR = {
      "patient_id": "1",
-     "heart_rate_average_since": TJ
+     "heart_rate_average_since": str(T_fut)
      }
 
 r6 = requests.get("http://127.0.0.1:5000/api/heart_rate/interval_average",
