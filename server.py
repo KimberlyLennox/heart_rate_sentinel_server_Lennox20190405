@@ -9,7 +9,7 @@ import numpy as np
 import datetime
 import math
 app = Flask(__name__)
-connect("mongodb+srv://Kim:Zs14nsnRcSzRJcOF@"
+connect("mongodb+srv://Kim:Password"
         "cluster0-cxyhs.mongodb.net/test?retryWrites=true")
 for handler in logging.root.handlers[:]:  # This line makes the log file work
     logging.root.removeHandler(handler)
