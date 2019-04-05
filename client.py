@@ -8,7 +8,7 @@ print(r.text)
 
 patient = {
            "patient_id": "1",
-           "attending_email": "lennox_kimberly@yahoo.com",
+           "attending_email": "lennoxkimberly25@gmail.com",
            "user_age": 50,
            }
 
@@ -21,7 +21,7 @@ HR = {
      }
 r3 = requests.post("http://127.0.0.1:5000/api/heart_rate", json=HR)
 print(r3.text)
-
+TJ = datetime.datetime.now()
 HR = {
      "patient_id": "1",
      "heart_rate": 90
@@ -30,10 +30,11 @@ HR = {
 time.sleep(5)
 r3 = requests.post("http://127.0.0.1:5000/api/heart_rate", json=HR)
 print(r3.text)
-TJ = r3.text
-TJ = TJ.rstrip("\n")
-TJ = TJ.replace('"', '')
-T = datetime.datetime.strptime(TJ, "%a, %d %b %Y %H:%M:%S %Z")
+
+TJ = str(TJ)
+print(TJ)
+print(TJ)
+
 HR = {
      "patient_id": "1",
      "heart_rate": 60

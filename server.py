@@ -1,5 +1,4 @@
-# using SendGrid's Python Library
-# https://github.com/sendgrid/sendgrid-python
+import logging
 import os
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
@@ -9,9 +8,13 @@ from pymodm import MongoModel, fields
 import numpy as np
 import datetime
 import math
-import logging
 app = Flask(__name__)
-connect("mongodb://localhost:27017/SentinelServer")
+connect("mongodb+srv://Kim:Zs14nsnRcSzRJcOF@"
+        "cluster0-cxyhs.mongodb.net/test?retryWrites=true")
+for handler in logging.root.handlers[:]:  # This line makes the log file work
+    logging.root.removeHandler(handler)
+logging.basicConfig(filename="server_log.log", filemode="w",
+                    level=logging.INFO)
 
 
 class User(MongoModel):
@@ -94,10 +97,13 @@ def CheckFormat(r):
         x = "Patient saved successfully"
     except KeyError:
         x = "Incorrect format: please try again"
+        logging.warning(x)
     except TypeError:
         x = "Incorrect format: please try again"
+        logging.warning(x)
     except ValueError:
         x = "Incorrect format: please try again"
+        logging.warning(x)
     return x
 
 
@@ -139,7 +145,7 @@ def CheckIntervalData(r):
     try:
         ID = str(r["patient_id"])
         time = str(r["heart_rate_average_since"])
-        time = datetime.datetime.strptime(time, "%a, %d %b %Y %H:%M:%S %Z")
+        time = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f")
     except KeyError:
         x = "Incorrect format: please try again"
     except TypeError:
@@ -168,6 +174,7 @@ def newpatient():
     x = CheckFormat(r)
     if x == "Incorrect format: please try again":
         info = "Incorrect input patient format; please try again"
+        logging.warning(info)
     else:
         ID = str(r["patient_id"])
         a_email = r["attending_email"]
@@ -175,6 +182,7 @@ def newpatient():
         u = User(ID, email=a_email, user_age=age)
         u.save()
         info = x
+        logging.info("Patient "+ID+" added to database")
     return jsonify(info)
 
 
@@ -223,15 +231,16 @@ def sendHR():
     """
     r = request.get_json()
     x = CheckHRData(r)
+    T_ind = datetime.datetime.now()
     if x == "Incorrect format: please try again":
-        info = "Incorrect HR Data format; please try again"
+        outjson = "Incorrect HR Data format; please try again"
+        logging.warning(outjson)
     else:
         patient_id = str(r["patient_id"])
-        HR_ind = r["heart_rate"]
-        T_ind = datetime.datetime.now()
+        HR_ind = int(r["heart_rate"])
         user = User.objects.raw({"_id": patient_id}).first()
         HR = user.heart_rate
-        info = T_ind
+        outjson = T_ind
         if user.heart_rate is None:
             HR = HR_ind
             T = T_ind
@@ -241,11 +250,16 @@ def sendHR():
             T.append(T_ind)
         tach = HRStatus([HR_ind])
         if tach == "tachycardic":
-            SendStatus(user)
+            tach = SendStatus(user)
+            logging.info("Patient "+patient_id+" is tachycardic")
         user.heart_rate = HR
         user.timestamp = T
         user.save()
-    return jsonify(info)
+        outjson = {
+                   "Time": T_ind,
+                   "Status": tach
+                   }
+    return jsonify(outjson)
 
 
 @app.route("/api/heart_rate/average/<patient_id>", methods=["GET"])
@@ -281,9 +295,10 @@ def IntervalAverage():
     x = CheckIntervalData(r)
     if x == "Incorrect format: please try again":
         out = "Incorrect interval average format; please try again"
+        logging.warning(out)
     else:
         time = r["heart_rate_average_since"]
-        time = datetime.datetime.strptime(time, "%a, %d %b %Y %H:%M:%S %Z")
+        time = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f")
         patient_id = str(r["patient_id"])
         user = User.objects.raw({"_id": patient_id}).first()
         HRmat = user.heart_rate
@@ -300,24 +315,34 @@ def IntervalAverage():
     return jsonify(out)
 
 
+# using SendGrid's Python Library
+# https://github.com/sendgrid/sendgrid-python
 def SendStatus(user):
     """
     Sends email to attending physician if patient is tachycardic
     Args: user: MongoDB user object
     """
-    outstring = "Patient <b>"+str(user.patientID)
-    +"</b> is tachycardic with a heart rate of "+str(user.heart_rate[-1])
+    HR = (user.heart_rate[-1:])
+    HRstring = str(HR[0])
+    time = user.timestamp[-1]
+    outstring = ("Patient <b>" + str(user.patientID) +
+                 "</b> is tachycardic with a heart rate of <b>" +
+                 HRstring + "</b> on " +
+                 time.strftime("%m/%d/%Y, at %H:%M:%S"))
     message = Mail(
         from_email='kimberly.lennox@duke.edu',
         to_emails=user.email,
         subject='Patient '+str(user.patientID)+" Status",
         html_content=outstring)
     try:
-        sg = SendGridAPIClient(os.environ.get('SG.QzTqaJPXQD-oOsoTc8gm-w.s-" \
-        ZTohWVJPdDbQpO6ErXPLkAw-v4kquByyKbTatqWVc'))
+        sg = SendGridAPIClient(os.environ.get('SG.QzTqaJPXQD-'
+                                              'oOsoTc8gm-w.s-ZToh'
+                                              'WVJPdDbQpO6ErX'
+                                              'PLkAw-v4kquByyKbTatqWVc'))
         response = sg.send(message)
         print(response.status_code)
         print(response.body)
         print(response.headers)
     except Exception as e:
         print(e.message)
+    return user.email
