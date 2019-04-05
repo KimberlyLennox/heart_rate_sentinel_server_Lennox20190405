@@ -5,6 +5,7 @@ pytest-cov
 pytest-pep8
 pymodm
 sendgrid
+dnspython
 requests
 jupyter
 ipython
