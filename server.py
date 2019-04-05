@@ -32,7 +32,7 @@ class User(MongoModel):
     heart_rate = fields.ListField()
 
 
-def HRStatus(HR):
+def HRStatus(HR, user):
     """
     Determines whether patient is tachycardic
     Args: HR, patient herat rate
@@ -46,6 +46,18 @@ def HRStatus(HR):
             outstring = "tachycardic"
         else:
             outstring = "not tachycardic"
+    if outstring == "tachycardic":
+        try:
+            tach = SendStatus(user)
+            logging.info("Patient " + user.patientID+" is tachycardic. " +
+                         "Emailed " + user.email)
+        except AttributeError:  # Avoid sending email during testing
+            a = 1
+    user.status = outstring
+    try:
+        user.save()
+    except AttributeError:  # Avoid saving during testing
+        a = 1
     return outstring
 
 
@@ -75,8 +87,11 @@ def GetIndex(T, time):
     """
     T_array = np.array(T, dtype='datetime64')
     idx = np.where(T_array >= time)
-    idx_min = (idx[0])
-    idx_min = idx_min[0]
+    if np.size(idx) == 0:
+        idx_min = -1
+    else:
+        idx_min = (idx[0])
+        idx_min = idx_min[0]
     return idx_min
 
 
@@ -209,11 +224,10 @@ def Status(patient_id):
     """
     user = User.objects.raw({"_id": patient_id}).first()
     HR = user.heart_rate[-1:]
-    tach = HRStatus(HR)
     T = user.timestamp[-1:]
     info = {
             "heart_rate": HR,
-            "status": tach,
+            "status": user.status,
             "timestamp": T
             }
     return jsonify(info)
@@ -248,10 +262,7 @@ def sendHR():
             T = user.timestamp
             HR.append(HR_ind)
             T.append(T_ind)
-        tach = HRStatus([HR_ind])
-        if tach == "tachycardic":
-            tach = SendStatus(user)
-            logging.info("Patient "+patient_id+" is tachycardic")
+        tach = HRStatus([HR_ind], user)
         user.heart_rate = HR
         user.timestamp = T
         user.save()
@@ -309,6 +320,8 @@ def IntervalAverage():
             idx = GetIndex(T, time)
             if idx == []:
                 out = "None"
+            elif idx == -1:
+                out = "No measurements after input time"
             else:
                 HR = HRmat[idx:len(HRmat)]
                 out = CalcAverage(HR)
