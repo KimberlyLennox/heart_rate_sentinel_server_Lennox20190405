@@ -1,13 +1,54 @@
 import pytest
 
 
-@pytest.mark.parametrize("s, soln", [([100], "tachycardic"),
-                                     ([80], "not tachycardic"),
-                                     ([], "No heart rate data"
-                                     " has been entered")])
-def test_HRStatus(s, soln):
+class user():
+    """
+    Dummy class that works identically to a Mongo
+    model
+    """
+    def __init__(self, patientID, email, user_age, status, timestamp,
+                 heart_rate):
+        self.patientID = patientID
+        self.email = email
+        self.user_age = user_age
+        self.status = status
+        self.timestamp = timestamp
+        self.heart_rate = heart_rate
+
+
+@pytest.fixture
+def load_user():
+    """
+    Loads time data from test_data1.csv
+    args: None
+    Returns:
+        t: time vector
+    """
+    user.patientID = 1
+    user.email = "email@test.com"
+    user.user_age = 2
+    user.HR = [50]
+    return user
+
+
+def test_HRStatus1(load_user):
     from server import HRStatus
-    ans = HRStatus(s)
+    ans = HRStatus([100], load_user)
+    soln = "tachycardic"
+    assert ans == soln
+
+
+def test_HRStatus2(load_user):
+    from server import HRStatus
+    ans = HRStatus([80], load_user)
+    soln = "not tachycardic"
+    assert ans == soln
+
+
+def test_HRStatus3(load_user):
+    from server import HRStatus
+    ans = HRStatus([], load_user)
+    soln = "No heart rate data has been entered"
     assert ans == soln
 
 
